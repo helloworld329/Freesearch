@@ -2,12 +2,136 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>EduSearch with Local AI</title>
+  <title>EduSearch</title>
   <style>
-    /* (Your existing styles stay the same) */
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+
+    header {
+      background-color: #1e1e1e;
+      padding: 15px 20px;
+      font-size: 1.5em;
+      font-weight: bold;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    #chat {
+      max-width: 700px;
+      margin: 20px auto;
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 20px;
+      min-height: 300px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.4);
+    }
+
+    .msg {
+      margin: 10px 0;
+      padding: 12px 16px;
+      border-radius: 10px;
+      line-height: 1.5em;
+      white-space: pre-wrap;
+      max-width: 90%;
+    }
+
+    .user {
+      background: #2c2c2c;
+      color: #90caf9;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .bot {
+      background: #333;
+      color: #e0e0e0;
+      margin-right: auto;
+    }
+
+    #inputArea {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      max-width: 700px;
+      margin: 10px auto 30px;
+      padding: 10px;
+      gap: 10px;
+    }
+
+    #input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      background: #2a2a2a;
+      border: 1px solid #555;
+      color: #fff;
+    }
+
+    button {
+      padding: 12px 18px;
+      background: #64b5f6;
+      border: none;
+      color: #121212;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #42a5f5;
+    }
+
+    #gear {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      font-size: 24px;
+      background: #2a2a2a;
+      border: 2px solid #444;
+      border-radius: 50%;
+      padding: 10px;
+      cursor: pointer;
+      z-index: 10;
+      color: #ccc;
+    }
+
+    #settings {
+      position: fixed;
+      right: -300px;
+      top: 0;
+      width: 260px;
+      height: 100%;
+      background: #181818;
+      border-left: 2px solid #444;
+      box-shadow: -4px 0 10px rgba(0,0,0,0.4);
+      padding: 20px;
+      transition: right 0.3s ease;
+      z-index: 9;
+    }
+
+    #settings.open {
+      right: 0;
+    }
+
+    #settings h3 {
+      margin-top: 0;
+      font-size: 1.2em;
+    }
+
+    #settings select, #settings button {
+      width: 100%;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
+
+  <header>EduSearch</header>
+  <div id="gear" onclick="toggleSettings()">⚙️</div>
 
   <div id="chat"></div>
 
@@ -18,8 +142,7 @@
 
   <div id="settings">
     <h3>Settings</h3>
-    <label>
-      Theme:
+    <label>Theme:
       <select id="theme" onchange="saveSettings()">
         <option value="dark">Dark</option>
         <option value="light">Light</option>
@@ -30,7 +153,6 @@
 
   <script type="module">
     import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@latest';
-
     let generator;
 
     async function initModel() {
@@ -53,7 +175,7 @@
       msg.innerHTML = sanitize(text);
       document.getElementById('chat').appendChild(msg);
       msg.scrollIntoView({ behavior: 'smooth' });
-      
+
       const hist = JSON.parse(getCookie("chatHistory") || "[]");
       hist.push({ role: cls, text });
       setCookie("chatHistory", JSON.stringify(hist), 30);
@@ -67,11 +189,10 @@
       const input = document.getElementById('input');
       const question = input.value.trim();
       if (!question || !generator) return;
-      
+
       appendMsg(question, 'user');
       input.value = '';
 
-      // If it's math only, handle locally
       const cleaned = question.toLowerCase()
         .replace(/what('?s| is| the)?|calculate|result of|equals?|=/gi, '')
         .replace(/x/gi, '*')
@@ -91,9 +212,7 @@
       appendSystemMsg('🤖 Thinking…');
       try {
         const output = await generator(question, { max_new_tokens: 60 });
-        const answer = output[0]?.generated_text
-                         .slice(question.length)
-                         .trim() || "I couldn't answer that.";
+        const answer = output[0]?.generated_text.slice(question.length).trim() || "I couldn't answer that.";
         appendMsg(answer, 'bot');
       } catch (e) {
         appendMsg("Local AI error: " + e.message, 'bot');
@@ -116,22 +235,35 @@
     function loadSettings() {
       const theme = getCookie("theme") || "dark";
       document.getElementById('theme').value = theme;
-
-      document.body.style.backgroundColor = theme==='dark'?'#121212':'#f0f0f0';
-      document.body.style.color = theme==='dark'?'#e0e0e0':'#121212';
+      applyTheme(theme);
 
       const hist = JSON.parse(getCookie("chatHistory") || "[]");
       hist.forEach(m => appendMsg(m.text, m.role));
     }
 
     function saveSettings() {
-      setCookie("theme", document.getElementById('theme').value, 30);
-      loadSettings();
+      const theme = document.getElementById('theme').value;
+      setCookie("theme", theme, 30);
+      applyTheme(theme);
+    }
+
+    function applyTheme(theme) {
+      if (theme === 'light') {
+        document.body.style.backgroundColor = '#f4f4f4';
+        document.body.style.color = '#121212';
+      } else {
+        document.body.style.backgroundColor = '#121212';
+        document.body.style.color = '#e0e0e0';
+      }
     }
 
     function clearChat() {
       document.getElementById('chat').innerHTML = '';
       setCookie("chatHistory", "[]", 30);
+    }
+
+    function toggleSettings() {
+      document.getElementById('settings').classList.toggle('open');
     }
 
     window.onload = loadSettings;
