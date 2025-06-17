@@ -838,21 +838,31 @@
     renderActiveChat();
   });
 
-  // Detect cookie consent on load
-  function checkCookieConsent() {
-    const consent = cookieUtil.get('freesearch_cookieConsent');
-    if (consent === 'yes') {
-      cookieConsentGiven = true;
-      cookieConsentBanner.style.display = 'none';
-      loadFromCookies();
-      if (!chats.length) createNewChat();
-      else renderChatList();
-      renderActiveChat();
+function checkCookieConsent() {
+  const cookieConsentBanner = document.getElementById('cookieConsentBanner');
+  const consent = cookieUtil.get('freesearch_cookieConsent');
+
+  if (consent === 'yes') {
+    // User has already given consent, hide banner
+    cookieConsentBanner.style.display = 'none';
+    cookieConsentGiven = true;
+
+    // Load chat history and UI
+    loadFromCookies();
+
+    if (!chats.length) {
+      createNewChat();
     } else {
-      cookieConsentGiven = false;
-      cookieConsentBanner.style.display = 'flex';
+      renderChatList();
+      renderActiveChat();
     }
+  } else {
+    // Consent not given, show banner to prompt user
+    cookieConsentGiven = false;
+    cookieConsentBanner.style.display = 'flex';
   }
+}
+
 
   // On first accept, save consent cookie
   acceptCookiesBtn.addEventListener('click', () => {
