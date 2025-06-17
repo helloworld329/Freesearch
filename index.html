@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>EduSearch Chatbot</title>
+<title>FreeSearch Chatbot</title>
 <style>
   /* === Full UI Styling === */
 
@@ -224,7 +224,7 @@
 </head>
 <body>
 
-<header>EduSearch Chatbot</header>
+<header>FreeSearch Chatbot</header>
 <div id="gear" title="Settings ⚙️">⚙️</div>
 
 <div id="chat" aria-live="polite" aria-label="Chat messages">
@@ -246,107 +246,46 @@
     </select>
   </label>
   <button onclick="clearChat()">Clear Chat</button>
+  <br /><br />
+  <a href="https://docs.google.com/forms/d/e/1FAIpQLSf6gXYK8uN-xWUiM3_BshtLcAzEKLEwDaersX0Y5Mx2QXbWgg/viewform?usp=header" target="_blank" rel="noopener" style="color:#2d6dfd; text-decoration:none; font-weight:bold;">Inquiry Form</a>
 </div>
 
-<!-- transformers.js latest CDN -->
-<script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.1.0/dist/transformers.min.js"></script>
-
 <script>
-  // === GLOBAL VARIABLES ===
-  let pipeline = null;
-
-  // Load the AI model asynchronously
-  async function loadModel() {
-    appendMsg("Loading AI model, please wait...", "bot");
-    try {
-      pipeline = await window.transformers.pipeline('text-generation', 'Xenova/gpt2');
-      appendMsg("🤖 AI model loaded and ready.", "bot");
-    } catch (e) {
-      appendMsg("⚠️ Failed to load AI model.", "bot");
-      console.error("Model load error:", e);
-    }
-  }
-
-  // Sanitize user input/output to avoid HTML injection
+  // === Helper functions ===
   function sanitize(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
   }
-
-  // Append a message to chat
   function appendMsg(text, cls) {
     const chat = document.getElementById('chat');
     const msg = document.createElement('div');
-    msg.className = `msg ${cls}`;
+    msg.className = 'msg ' + cls;
     msg.innerHTML = sanitize(text);
     chat.appendChild(msg);
     chat.scrollTop = chat.scrollHeight;
-
-    // Save chat history in cookies (last 100 messages max)
-    let history = JSON.parse(getCookie("chatHistory") || "[]");
-    history.push({ role: cls, text });
-    if (history.length > 100) history.shift();
-    setCookie("chatHistory", JSON.stringify(history), 30);
+    saveHistory(cls, text);
   }
 
-  // Handle the user's query input
-  async function handleQuery() {
-    const input = document.getElementById('input');
-    const question = input.value.trim();
-    if (!question) return;
-    input.value = '';
-
-    appendMsg(question, "user");
-
-    // Quick math evaluation (simple expressions only)
-    let cleaned = question.toLowerCase()
-      .replace(/what('?s| is| the)?|calculate|result of|equals?|=/gi, '')
-      .replace(/x/gi, '*')
-      .trim();
-
-    if (/^[0-9+\-*/().\s]+$/.test(cleaned)) {
-      try {
-        const result = eval(cleaned);
-        appendMsg(`${question} = ${result}`, "bot");
-        return;
-      } catch {
-        appendMsg("I couldn't calculate that.", "bot");
-        return;
+  // Save chat history to cookie (max 100 messages)
+  function saveHistory(role, text) {
+    let history = JSON.parse(getCookie('chatHistory') || '[]');
+    history.push({role, text});
+    if(history.length > 100) history.shift();
+    setCookie('chatHistory', JSON.stringify(history), 30);
+  }
+  function loadHistory() {
+    let history = JSON.parse(getCookie('chatHistory') || '[]');
+    if(history.length) {
+      const chat = document.getElementById('chat');
+      chat.innerHTML = '';
+      for(const m of history) {
+        appendMsg(m.text, m.role);
       }
-    }
-
-    // Use AI model if available
-    if (pipeline) {
-      appendMsg("🤖 Thinking...", "bot");
-      try {
-        const output = await pipeline(question, { max_length: 120, do_sample: true, temperature: 0.7 });
-        // Remove the last "Thinking..." message before showing answer
-        const chat = document.getElementById('chat');
-        const botMsgs = chat.querySelectorAll('.msg.bot');
-        if (botMsgs.length) botMsgs[botMsgs.length - 1].remove();
-
-        const answer = output[0]?.generated_text || "I'm not sure how to answer that.";
-        appendMsg(answer, "bot");
-        return;
-      } catch (err) {
-        appendMsg("AI model error occurred.", "bot");
-        console.error("AI error:", err);
-      }
-    }
-
-    // Fallback to DuckDuckGo Instant Answer API
-    try {
-      const res = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(question)}&format=json&no_html=1&skip_disambig=1`);
-      const data = await res.json();
-      const answer = data.AbstractText || (data.RelatedTopics?.[0]?.Text ?? '');
-      appendMsg(answer || "I couldn't find anything.", "bot");
-    } catch {
-      appendMsg("Search failed.", "bot");
     }
   }
 
-  // Cookies helper functions
+  // Cookie helpers
   function setCookie(name, value, days) {
     const expires = new Date(Date.now() + days*864e5).toUTCString();
     document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
@@ -354,59 +293,89 @@
   function getCookie(name) {
     return document.cookie.split('; ').reduce((r, v) => {
       const parts = v.split('=');
-      return parts[0] === name ? decodeURIComponent(parts[1]) : r
+      return parts[0] === name ? decodeURIComponent(parts[1]) : r;
     }, '');
   }
 
-  // Load theme and chat history on page load
-  function loadSettings() {
-    const theme = getCookie("theme") || "dark";
-    document.getElementById('theme').value = theme;
-    applyTheme(theme);
-
-    const history = JSON.parse(getCookie("chatHistory") || "[]");
-    if (history.length) {
-      const chat = document.getElementById('chat');
-      chat.innerHTML = ''; // Clear default message
-      history.forEach(m => {
-        appendMsg(m.text, m.role);
-      });
-    }
+  // Settings management
+  function applyTheme(theme) {
+    if(theme === 'light') document.body.classList.add('light');
+    else document.body.classList.remove('light');
   }
-
-  // Save theme on change
   function saveSettings() {
     const theme = document.getElementById('theme').value;
-    setCookie("theme", theme, 30);
+    setCookie('theme', theme, 30);
     applyTheme(theme);
   }
-
-  // Apply theme styles to body class
-  function applyTheme(theme) {
-    if (theme === 'light') {
-      document.body.classList.add('light');
-    } else {
-      document.body.classList.remove('light');
-    }
+  function loadSettings() {
+    const theme = getCookie('theme') || 'dark';
+    document.getElementById('theme').value = theme;
+    applyTheme(theme);
   }
 
   // Clear chat and cookie history
   function clearChat() {
-    if (confirm("Clear the chat history?")) {
+    if(confirm('Clear chat history?')) {
       document.getElementById('chat').innerHTML = '';
-      setCookie("chatHistory", "[]", 30);
+      setCookie('chatHistory', '[]', 30);
     }
   }
 
-  // Toggle settings panel visibility
+  // Toggle settings panel
   function toggleSettings() {
     document.getElementById('settings').classList.toggle('open');
+  }
+
+  // The old AI function from your previous code (simplified example)
+  async function handleQuery() {
+    const input = document.getElementById('input');
+    const question = input.value.trim();
+    if(!question) return;
+    input.value = '';
+    appendMsg(question, 'user');
+
+    // Try quick math calculation
+    let cleaned = question.toLowerCase()
+      .replace(/what('?s| is| the)?|calculate|result of|equals?|=/gi, '')
+      .replace(/x/gi, '*')
+      .trim();
+
+    if(/^[0-9+\-*/().\s]+$/.test(cleaned)) {
+      try {
+        const result = eval(cleaned);
+        appendMsg(`${question} = ${result}`, 'bot');
+        return;
+      } catch {
+        appendMsg("I couldn't calculate that.", 'bot');
+        return;
+      }
+    }
+
+    // Simulated AI fallback: (replace with your old AI logic or fallback API calls)
+    appendMsg("I'm thinking...", 'bot');
+    setTimeout(() => {
+      // Example canned fallback responses or random from a list
+      const responses = [
+        "That's interesting! Could you clarify?",
+        "Sorry, I don't have an answer right now.",
+        "Let me look into that for you.",
+        "Can you rephrase your question?",
+      ];
+      // Remove "I'm thinking..." message
+      const chat = document.getElementById('chat');
+      const bots = chat.querySelectorAll('.msg.bot');
+      if(bots.length) bots[bots.length-1].remove();
+
+      // Pick random fallback
+      const answer = responses[Math.floor(Math.random() * responses.length)];
+      appendMsg(answer, 'bot');
+    }, 1500);
   }
 
   // Event listeners
   document.getElementById('gear').addEventListener('click', toggleSettings);
   document.getElementById('input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
+    if(e.key === 'Enter') {
       e.preventDefault();
       handleQuery();
     }
@@ -415,7 +384,7 @@
   // Initialization
   window.onload = () => {
     loadSettings();
-    loadModel();
+    loadHistory();
   };
 </script>
 
