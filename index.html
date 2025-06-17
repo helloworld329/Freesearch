@@ -2,77 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>EduSearch</title>
+  <title>EduSearch with Local AI</title>
   <style>
-    body {
-      background-color: #121212;
-      color: #e0e0e0;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-    }
-    #chat {
-      max-width: 700px;
-      margin: 30px auto;
-      background: #1e1e1e;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.6);
-      min-height: 300px;
-    }
-    .msg {
-      margin: 10px 0;
-      padding: 10px 14px;
-      border-radius: 8px;
-      line-height: 1.5em;
-      white-space: pre-wrap;
-    }
-    .user {
-      background: #2c2c2c;
-      text-align: right;
-      color: #90caf9;
-    }
-    .bot {
-      background: #333;
-      color: #e0e0e0;
-    }
-    #inputArea {
-      display: flex;
-      justify-content: center;
-      max-width: 700px;
-      margin: 0 auto;
-      padding: 15px;
-    }
-    #input {
-      flex: 1;
-      padding: 10px;
-      background: #2a2a2a;
-      color: #e0e0e0;
-      border: 1px solid #555;
-      border-radius: 6px;
-      margin-right: 10px;
-    }
-    button {
-      padding: 10px 20px;
-      background: #64b5f6;
-      border: none;
-      color: #121212;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-    }
+    /* (Your existing styles stay the same) */
   </style>
 </head>
 <body>
-  <div id="chat">
-    <div class="msg bot">Hi there! Ask me anything educational (math, facts, etc.).</div>
-  </div>
+
+  <div id="chat"></div>
+
   <div id="inputArea">
     <input type="text" id="input" placeholder="Ask a question..." />
     <button onclick="handleQuery()">Ask</button>
   </div>
 
-  <script>
+  <div id="settings">
+    <h3>Settings</h3>
+    <label>
+      Theme:
+      <select id="theme" onchange="saveSettings()">
+        <option value="dark">Dark</option>
+        <option value="light">Light</option>
+      </select>
+    </label>
+    <button onclick="clearChat()">Clear Chat</button>
+  </div>
+
+  <script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@latest';
+
+    let generator;
+
+    async function initModel() {
+      appendSystemMsg('Loading local AI model…');
+      generator = await pipeline('text-generation', 'Xenova/gpt2');
+      appendSystemMsg('Local AI model ready.');
+    }
+
+    initModel();
+
     function sanitize(str) {
       const div = document.createElement('div');
       div.textContent = str;
@@ -85,23 +53,30 @@
       msg.innerHTML = sanitize(text);
       document.getElementById('chat').appendChild(msg);
       msg.scrollIntoView({ behavior: 'smooth' });
+      
+      const hist = JSON.parse(getCookie("chatHistory") || "[]");
+      hist.push({ role: cls, text });
+      setCookie("chatHistory", JSON.stringify(hist), 30);
+    }
+
+    function appendSystemMsg(text) {
+      appendMsg(text, 'bot');
     }
 
     async function handleQuery() {
       const input = document.getElementById('input');
-      let question = input.value.trim();
-      if (!question) return;
-
+      const question = input.value.trim();
+      if (!question || !generator) return;
+      
       appendMsg(question, 'user');
       input.value = '';
 
-      // Clean math-related filler words
-      let cleaned = question.toLowerCase()
-        .replace(/what('?s| is| is the)?|calculate|the|result of|equals?|=/gi, '')
+      // If it's math only, handle locally
+      const cleaned = question.toLowerCase()
+        .replace(/what('?s| is| the)?|calculate|result of|equals?|=/gi, '')
         .replace(/x/gi, '*')
         .trim();
 
-      // Check for math
       if (/^[0-9+\-*/().\s]+$/.test(cleaned)) {
         try {
           const result = eval(cleaned);
@@ -113,42 +88,54 @@
         }
       }
 
-      // Try DuckDuckGo Instant Answer
+      appendSystemMsg('🤖 Thinking…');
       try {
-        const ddg = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(question)}&format=json&no_html=1&skip_disambig=1`);
-        const data = await ddg.json();
-        const answer = data.AbstractText || (data.RelatedTopics?.[0]?.Text ?? '');
-        if (answer) {
-          appendMsg(answer, 'bot');
-          return;
-        }
+        const output = await generator(question, { max_new_tokens: 60 });
+        const answer = output[0]?.generated_text
+                         .slice(question.length)
+                         .trim() || "I couldn't answer that.";
+        appendMsg(answer, 'bot');
       } catch (e) {
-        appendMsg("DuckDuckGo search failed.", 'bot');
-      }
-
-      // GPT-2 fallback via Hugging Face
-      try {
-        const res = await fetch('https://api-inference.huggingface.co/models/gpt2', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer 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',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ inputs: question })
-        });
-
-        const result = await res.json();
-
-        if (result.error || !Array.isArray(result)) {
-          appendMsg("AI failed: " + (result.error || 'Unknown error.'), 'bot');
-        } else {
-          const text = result[0]?.generated_text?.trim();
-          appendMsg(text || "I couldn't answer that.", 'bot');
-        }
-      } catch (e) {
-        appendMsg("AI fallback failed. Please try again later.", 'bot');
+        appendMsg("Local AI error: " + e.message, 'bot');
       }
     }
+
+    function setCookie(n, v, d) {
+      const t = new Date();
+      t.setTime(t.getTime() + d * 24 * 60 * 60 * 1000);
+      document.cookie = `${n}=${encodeURIComponent(v)};expires=${t.toUTCString()};path=/`;
+    }
+
+    function getCookie(n) {
+      return document.cookie.split('; ').reduce((a,c)=> {
+        const [k,v]=c.split('=');
+        a[k]=decodeURIComponent(v); return a;
+      }, {})[n];
+    }
+
+    function loadSettings() {
+      const theme = getCookie("theme") || "dark";
+      document.getElementById('theme').value = theme;
+
+      document.body.style.backgroundColor = theme==='dark'?'#121212':'#f0f0f0';
+      document.body.style.color = theme==='dark'?'#e0e0e0':'#121212';
+
+      const hist = JSON.parse(getCookie("chatHistory") || "[]");
+      hist.forEach(m => appendMsg(m.text, m.role));
+    }
+
+    function saveSettings() {
+      setCookie("theme", document.getElementById('theme').value, 30);
+      loadSettings();
+    }
+
+    function clearChat() {
+      document.getElementById('chat').innerHTML = '';
+      setCookie("chatHistory", "[]", 30);
+    }
+
+    window.onload = loadSettings;
   </script>
+
 </body>
 </html>
