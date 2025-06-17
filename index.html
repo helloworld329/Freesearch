@@ -1,342 +1,788 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>FreeSearch</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: "Segoe UI", sans-serif;
-      background-color: #121212;
-      color: #e0e0e0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    header {
-      width: 100%;
-      text-align: center;
-      padding: 20px 0;
-      font-size: 2em;
-      font-weight: bold;
-      background: #1f1f1f;
-      border-bottom: 1px solid #333;
-    }
-    #gear {
-      position: fixed;
-      top: 15px;
-      right: 20px;
-      font-size: 24px;
-      background: #2a2a2a;
-      border: 2px solid #444;
-      border-radius: 50%;
-      padding: 10px;
-      cursor: pointer;
-      z-index: 10;
-      color: #ccc;
-    }
-    #settings {
-      position: fixed;
-      right: -280px;
-      top: 0;
-      width: 260px;
-      height: 100%;
-      background: #181818;
-      border-left: 2px solid #444;
-      box-shadow: -4px 0 10px rgba(0,0,0,0.4);
-      padding: 20px;
-      transition: right 0.3s ease;
-      z-index: 9;
-    }
-    #settings.open { right: 0; }
-    #settings h3 { margin-top: 0; }
-    #settings select, #settings button, #settings label {
-      width: 100%;
-      margin-top: 10px;
-      display: block;
-    }
-
-    #chat {
-      margin-top: 20px;
-      width: 100%;
-      max-width: 600px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-    .msg {
-      max-width: 75%;
-      padding: 14px 18px;
-      border-radius: 30px;
-      font-size: 1em;
-      line-height: 1.5em;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-    .user {
-      align-self: flex-end;
-      background-color: #2a2a2a;
-      color: #90caf9;
-      border-bottom-right-radius: 5px;
-    }
-    .bot {
-      align-self: flex-start;
-      background-color: #333;
-      color: #e0e0e0;
-      border-bottom-left-radius: 5px;
-    }
-    #inputArea {
-      width: 100%;
-      max-width: 600px;
-      display: flex;
-      padding: 10px 20px 30px;
-      gap: 10px;
-    }
-    #input {
-      flex-grow: 1;
-      padding: 12px 16px;
-      border-radius: 999px;
-      border: none;
-      background: #2a2a2a;
-      color: #fff;
-      font-size: 1em;
-    }
-    button {
-      padding: 12px 20px;
-      background: #64b5f6;
-      color: #121212;
-      font-weight: bold;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover { background: #42a5f5; }
-
-    #historyList {
-      max-height: 150px;
-      overflow-y: auto;
-      margin-top: 10px;
-      font-size: 0.9em;
-      background: #222;
-      border-radius: 6px;
-      padding: 10px;
-    }
-
-    #cookieConsent {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-    #cookieConsentBox {
-      background: #1f1f1f;
-      padding: 20px 30px;
-      border-radius: 10px;
-      text-align: center;
-      max-width: 400px;
-    }
-
-    .light body {
-      background-color: #f0f0f0;
-      color: #111;
-    }
-    .light .msg.user {
-      background: #cce7ff;
-      color: #003366;
-    }
-    .light .msg.bot {
-      background: #ddd;
-      color: #111;
-    }
-    .light #input {
-      background: #fff;
-      color: #000;
-    }
-    .light #gear {
-      background: #eee;
-      color: #222;
-      border-color: #ccc;
-    }
-    .light #settings {
-      background: #f9f9f9;
-      color: #000;
-      border-color: #ccc;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FreeSearch Chatbot with History & Settings</title>
+<style>
+  /* === Reset & base === */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #121212;
+    color: #eee;
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+    user-select: text;
+  }
+  button, input {
+    font-family: inherit;
+  }
+  button {
+    cursor: pointer;
+  }
+  /* === Left Sidebar (Chat History) === */
+  #historySidebar {
+    width: 280px;
+    background-color: #1f1f1f;
+    border-right: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    padding: 15px 12px;
+  }
+  #historySidebar h2 {
+    margin: 0 0 15px 10px;
+    color: #64b5f6;
+    font-weight: 600;
+    user-select: none;
+  }
+  #chatList {
+    flex-grow: 1;
+    overflow-y: auto;
+    outline: none;
+  }
+  .chatItem {
+    background: #282828;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    padding: 12px 15px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .chatItem:hover, .chatItem.selected {
+    background: #64b5f6;
+    color: #121212;
+  }
+  .chatItem .title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chatItem .preview {
+    font-size: 0.85rem;
+    margin-top: 4px;
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chatItem .timestamp {
+    font-size: 0.75rem;
+    opacity: 0.5;
+    margin-top: 2px;
+    font-style: italic;
+  }
+  #newChatBtn {
+    margin-top: 10px;
+    padding: 12px;
+    background-color: #64b5f6;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    color: #121212;
+    user-select: none;
+    transition: background-color 0.2s ease;
+  }
+  #newChatBtn:hover {
+    background-color: #4a8ad3;
+  }
+  /* === Main Chat Area === */
+  #mainArea {
+    flex-grow: 1;
+    background-color: #282828;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 24px;
+    position: relative;
+  }
+  #chat {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+    outline: none;
+    font-size: 1rem;
+    line-height: 1.45;
+  }
+  .msg {
+    max-width: 75%;
+    padding: 12px 18px;
+    margin-bottom: 18px;
+    border-radius: 24px;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  }
+  .user {
+    align-self: flex-end;
+    background-color: #064789;
+    color: #b3d1ff;
+    text-align: right;
+    border-bottom-right-radius: 4px;
+  }
+  .bot {
+    align-self: flex-start;
+    background-color: #37474f;
+    color: #cfd8dc;
+    text-align: left;
+    border-bottom-left-radius: 4px;
+  }
+  /* Input area */
+  #inputArea {
+    display: flex;
+    margin-top: auto;
+  }
+  #input {
+    flex-grow: 1;
+    border-radius: 24px;
+    border: none;
+    padding: 14px 20px;
+    font-size: 1.1rem;
+    background-color: #121212;
+    color: #eee;
+    transition: box-shadow 0.2s ease;
+  }
+  #input::placeholder {
+    color: #666;
+  }
+  #input:focus {
+    outline: none;
+    box-shadow: 0 0 8px #64b5f6;
+  }
+  #sendBtn {
+    margin-left: 12px;
+    background-color: #64b5f6;
+    border: none;
+    color: #121212;
+    font-weight: 700;
+    border-radius: 24px;
+    padding: 14px 26px;
+    font-size: 1.1rem;
+    user-select: none;
+    transition: background-color 0.2s ease;
+  }
+  #sendBtn:hover:not(:disabled) {
+    background-color: #4a8ad3;
+  }
+  #sendBtn:disabled {
+    background-color: #426e9a;
+    cursor: not-allowed;
+  }
+  /* === Right Sidebar (Settings Panel) === */
+  #settingsSidebar {
+    width: 320px;
+    background-color: #1f1f1f;
+    position: fixed;
+    top: 0;
+    right: -320px;
+    height: 100vh;
+    padding: 25px 20px;
+    box-shadow: -4px 0 10px rgba(0,0,0,0.6);
+    transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    user-select: none;
+  }
+  #settingsSidebar.open {
+    right: 0;
+  }
+  #settingsSidebar h2 {
+    margin: 0 0 25px 0;
+    font-weight: 700;
+    color: #64b5f6;
+    user-select: none;
+  }
+  #settingsPanel label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+    font-size: 1rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  #settingsPanel input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+  #settingsPanel button {
+    margin-top: 10px;
+    padding: 14px;
+    background-color: #64b5f6;
+    border: none;
+    border-radius: 14px;
+    font-weight: 700;
+    color: #121212;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+  }
+  #settingsPanel button:hover {
+    background-color: #4a8ad3;
+  }
+  /* === Settings toggle button top-right === */
+  #settingsToggleBtn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #64b5f6;
+    border: none;
+    border-radius: 50%;
+    width: 52px;
+    height: 52px;
+    cursor: pointer;
+    box-shadow: 0 0 14px #64b5f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 110;
+    user-select: none;
+    transition: background-color 0.2s ease;
+  }
+  #settingsToggleBtn:hover {
+    background-color: #4a8ad3;
+  }
+  #settingsToggleBtn svg {
+    fill: #121212;
+    width: 28px;
+    height: 28px;
+  }
+  /* === Cookie Consent Banner === */
+  #cookieConsent {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #222;
+    color: #eee;
+    padding: 16px 28px;
+    border-radius: 28px;
+    box-shadow: 0 0 24px #64b5f6;
+    font-size: 1rem;
+    display: none;
+    align-items: center;
+    gap: 26px;
+    max-width: 480px;
+    user-select: none;
+    z-index: 9999;
+  }
+  #cookieConsent p {
+    margin: 0;
+    flex-grow: 1;
+  }
+  #cookieConsent button {
+    padding: 10px 22px;
+    background-color: #64b5f6;
+    border: none;
+    border-radius: 22px;
+    font-weight: 700;
+    color: #121212;
+    user-select: none;
+    transition: background-color 0.2s ease;
+  }
+  #cookieConsent button:hover {
+    background-color: #4a8ad3;
+  }
+  /* Scrollbar styles for chatList and chat */
+  #chatList::-webkit-scrollbar, #chat::-webkit-scrollbar {
+    width: 8px;
+  }
+  #chatList::-webkit-scrollbar-thumb, #chat::-webkit-scrollbar-thumb {
+    background: #64b5f6;
+    border-radius: 8px;
+  }
+  #chatList::-webkit-scrollbar-track, #chat::-webkit-scrollbar-track {
+    background: #1f1f1f;
+  }
+</style>
 </head>
 <body>
-  <div id="cookieConsent">
-    <div id="cookieConsentBox">
-      <p>This site uses cookies to store chat history and preferences. Do you accept?</p>
-      <button onclick="acceptCookies()">Accept</button>
-    </div>
+
+<!-- Left Sidebar: Chat History -->
+<aside id="historySidebar" role="region" aria-label="Chat History">
+  <h2>Chats</h2>
+  <div id="chatList" tabindex="0" aria-live="polite" aria-atomic="false"></div>
+  <button id="newChatBtn" aria-label="Start New Chat">+ New Chat</button>
+</aside>
+
+<!-- Main Chat Area -->
+<main id="mainArea" role="main" aria-label="Chat Window">
+  <section id="chat" tabindex="0" aria-live="polite" aria-atomic="false"></section>
+  <form id="inputArea" aria-label="Send a message">
+    <input id="input" type="text" placeholder="Ask me anything..." aria-label="Chat input" autocomplete="off" required />
+    <button id="sendBtn" type="submit" aria-label="Send message">Send</button>
+  </form>
+</main>
+
+<!-- Right Sidebar: Settings Panel -->
+<aside id="settingsSidebar" role="region" aria-label="Settings Panel">
+  <h2>Settings</h2>
+  <div id="settingsPanel">
+    <label for="saveHistoryToggle"><input type="checkbox" id="saveHistoryToggle" /> Save Chat History</label>
+    <button id="clearChatsBtn" aria-label="Clear All Chats">Clear All Chats</button>
+    <button id="clearCookiesBtn" aria-label="Clear Cookies and Reset">Clear Cookies & Reset</button>
+    <button id="inquiryBtn" aria-label="Send Inquiry">Send Inquiry</button>
   </div>
+</aside>
 
-  <header>FreeSearch</header>
-  <div id="gear" onclick="toggleSettings()">⚙️</div>
+<!-- Settings toggle button top-right -->
+<button id="settingsToggleBtn" aria-label="Toggle Settings Panel" title="Settings" type="button">
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0-14c-1.1 0-2 .9-2 2v.22a7.95 7.95 0 0 0-3.5 2.07l-.15-.15a2 2 0 0 0-2.83 2.83l.15.15A7.95 7.95 0 0 0 4.22 10H4a2 2 0 1 0 0 4h.22a7.95 7.95 0 0 0 2.07 3.5l-.15.15a2 2 0 0 0 2.83 2.83l.15-.15A7.95 7.95 0 0 0 10 19.78V20a2 2 0 1 0 4 0v-.22a7.95 7.95 0 0 0 3.5-2.07l.15.15a2 2 0 1 0 2.83-2.83l-.15-.15a7.95 7.95 0 0 0 2.07-3.5H20a2 2 0 1 0 0-4h-.22a7.95 7.95 0 0 0-2.07-3.5l.15-.15a2 2 0 0 0-2.83-2.83l-.15.15A7.95 7.95 0 0 0 14 4.22V4c0-1.1-.9-2-2-2z"/>
+  </svg>
+</button>
 
-  <div id="chat">
-    <div class="msg bot">Hi there! Ask me anything educational (math, facts, etc.).</div>
-  </div>
+<!-- Cookie Consent Banner -->
+<div id="cookieConsent" role="alertdialog" aria-modal="true" aria-live="assertive">
+  <p>This site uses cookies to save your chat history and settings. Do you accept cookies?</p>
+  <button id="acceptCookiesBtn" aria-label="Accept Cookies">Accept</button>
+</div>
 
-  <div id="inputArea">
-    <input type="text" id="input" placeholder="Ask a question..." />
-    <button onclick="handleQuery()">Ask</button>
-  </div>
+<script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@latest/dist/transformers.min.js"></script>
+<script>
+(async () => {
+  'use strict';
 
-  <div id="settings">
-    <h3>Settings</h3>
-    <label for="theme">Theme:
-      <select id="theme" onchange="saveSettings()">
-        <option value="dark">Dark</option>
-        <option value="light">Light</option>
-      </select>
-    </label>
-    <label><input type="checkbox" id="saveHistory" onchange="saveSettings()" checked /> Save History</label>
-    <button onclick="clearChat()">Clear Chat</button>
-    <button onclick="clearCookies()">Clear Cookies</button>
-    <div id="historyList"></div>
-  </div>
+  // === Elements ===
+  const chatEl = document.getElementById('chat');
+  const inputEl = document.getElementById('input');
+  const sendBtn = document.getElementById('sendBtn');
+  const saveHistoryToggle = document.getElementById('saveHistoryToggle');
+  const clearChatsBtn = document.getElementById('clearChatsBtn');
+  const clearCookiesBtn = document.getElementById('clearCookiesBtn');
+  const inquiryBtn = document.getElementById('inquiryBtn');
+  const cookieConsent = document.getElementById('cookieConsent');
+  const acceptCookiesBtn = document.getElementById('acceptCookiesBtn');
+  const settingsSidebar = document.getElementById('settingsSidebar');
+  const settingsToggleBtn = document.getElementById('settingsToggleBtn');
+  const chatListEl = document.getElementById('chatList');
+  const newChatBtn = document.getElementById('newChatBtn');
 
-  <script>
-    function sanitize(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
+  // === Storage keys ===
+  const COOKIE_CONSENT_KEY = 'freesearch_cookie_consent';
+  const CHATS_KEY = 'freesearch_chats';
+  const CURRENT_CHAT_ID_KEY = 'freesearch_currentChatId';
+  const SAVE_HISTORY_KEY = 'freesearch_save_history';
+
+  // === State ===
+  let chatsAll = []; // Array of {id:string, title:string, messages: [{role: 'user'|'bot', text:string, timestamp:number}]}
+  let currentChatId = null;
+  let saveHistory = true;
+  let generator = null; // transformers.js generator model
+  let isGenerating = false;
+
+  // === Utilities ===
+  function sanitize(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  function formatTimestamp(ts) {
+    const d = new Date(ts);
+    return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+  }
+  // Generate random chat id
+  function generateChatId() {
+    return 'chat-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+  }
+  // Find current chat object
+  function getCurrentChat() {
+    return chatsAll.find(c => c.id === currentChatId) || null;
+  }
+
+  // === UI Rendering ===
+  // Append message bubble to chat view
+  function appendMsg(text, role) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    div.innerHTML = sanitize(text);
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  // Render full chat messages in the main area
+  function renderChat() {
+    chatEl.innerHTML = '';
+    const chat = getCurrentChat();
+    if (!chat) {
+      appendMsg("Hi there! Ask me anything educational or just chat.", 'bot');
+      return;
     }
+    if (chat.messages.length === 0) {
+      appendMsg("Hi there! Ask me anything educational or just chat.", 'bot');
+      return;
+    }
+    for (const msg of chat.messages) {
+      appendMsg(msg.text, msg.role);
+    }
+  }
 
-    function appendMsg(text, cls) {
-      const msg = document.createElement('div');
-      msg.className = `msg ${cls}`;
-      msg.innerHTML = sanitize(text);
-      document.getElementById('chat').appendChild(msg);
-      msg.scrollIntoView({ behavior: 'smooth' });
+  // Render chat list sidebar
+  function renderChatList() {
+    chatListEl.innerHTML = '';
+    for (const chat of chatsAll) {
+      const lastMsg = chat.messages.length ? chat.messages[chat.messages.length - 1] : null;
+      const preview = lastMsg ? (lastMsg.text.length > 36 ? lastMsg.text.slice(0, 36) + '…' : lastMsg.text) : '(No messages)';
+      const item = document.createElement('div');
+      item.className = 'chatItem';
+      if (chat.id === currentChatId) item.classList.add('selected');
+      item.tabIndex = 0;
+      item.setAttribute('role', 'button');
+      item.setAttribute('aria-pressed', chat.id === currentChatId ? 'true' : 'false');
+      item.title = chat.title || '(Untitled chat)';
+      item.dataset.chatId = chat.id;
 
-      if (document.getElementById("saveHistory").checked) {
-        const hist = JSON.parse(getCookie("chatHistory") || "[]");
-        hist.push({ role: cls, text });
-        setCookie("chatHistory", JSON.stringify(hist), 30);
-        updateHistoryList();
+      const titleDiv = document.createElement('div');
+      titleDiv.className = 'title';
+      titleDiv.textContent = chat.title || '(Untitled chat)';
+      item.appendChild(titleDiv);
+
+      const previewDiv = document.createElement('div');
+      previewDiv.className = 'preview';
+      previewDiv.textContent = preview;
+      item.appendChild(previewDiv);
+
+      if (chat.messages.length > 0) {
+        const tsDiv = document.createElement('div');
+        tsDiv.className = 'timestamp';
+        tsDiv.textContent = formatTimestamp(chat.messages[chat.messages.length - 1].timestamp);
+        item.appendChild(tsDiv);
       }
+
+      // Click or enter/space keyboard select chat
+      item.addEventListener('click', () => {
+        if (currentChatId !== chat.id) {
+          currentChatId = chat.id;
+          saveCurrentChatId();
+          renderChat();
+          renderChatList();
+        }
+      });
+      item.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          item.click();
+        }
+      });
+
+      chatListEl.appendChild(item);
     }
+  }
 
-    function handleQuery() {
-      const input = document.getElementById('input');
-      const question = input.value.trim();
-      if (!question) return;
-      appendMsg(question, 'user');
-      input.value = '';
-
-      let cleaned = question.toLowerCase()
-        .replace(/what('?s| is| the)?|calculate|result of|equals?|=/gi, '')
-        .replace(/x/gi, '*')
-        .trim();
-
-      if (/^[0-9+\-*/().\s]+$/.test(cleaned)) {
-        try {
-          const result = eval(cleaned);
-          appendMsg(`${question} = ${result}`, 'bot');
-          return;
-        } catch {
-          appendMsg("I couldn't calculate that.", 'bot');
-          return;
+  // Save chats to localStorage
+  function saveChats() {
+    if (!saveHistory) return;
+    localStorage.setItem(CHATS_KEY, JSON.stringify(chatsAll));
+  }
+  // Load chats from localStorage
+  function loadChats() {
+    try {
+      const raw = localStorage.getItem(CHATS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          chatsAll = parsed;
         }
       }
-
-      fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(question)}&format=json&no_html=1&skip_disambig=1`)
-        .then(res => res.json())
-        .then(data => {
-          const answer = data.AbstractText || (data.RelatedTopics?.[0]?.Text ?? '');
-          appendMsg(answer || "I couldn't find anything.", 'bot');
-        })
-        .catch(() => {
-          appendMsg("Search failed.", 'bot');
-        });
+    } catch(e) {
+      chatsAll = [];
     }
+  }
+  // Save current chat id
+  function saveCurrentChatId() {
+    if (!saveHistory) return;
+    localStorage.setItem(CURRENT_CHAT_ID_KEY, currentChatId);
+  }
+  // Load current chat id
+  function loadCurrentChatId() {
+    if (!saveHistory) return null;
+    return localStorage.getItem(CURRENT_CHAT_ID_KEY);
+  }
+  // Save saveHistory toggle
+  function saveSaveHistoryToggle() {
+    localStorage.setItem(SAVE_HISTORY_KEY, saveHistory ? 'true' : 'false');
+  }
+  // Load saveHistory toggle
+  function loadSaveHistoryToggle() {
+    return localStorage.getItem(SAVE_HISTORY_KEY) === 'true';
+  }
 
-    function toggleSettings() {
-      document.getElementById('settings').classList.toggle('open');
+  // === New Chat Creation ===
+  function createNewChat() {
+    const id = generateChatId();
+    const newChat = {
+      id,
+      title: 'New Chat',
+      messages: []
+    };
+    chatsAll.unshift(newChat);
+    currentChatId = id;
+    saveCurrentChatId();
+    saveChats();
+    renderChatList();
+    renderChat();
+  }
+
+  // === Cookie Consent ===
+  function showCookieConsent() {
+    cookieConsent.style.display = 'flex';
+    cookieConsent.setAttribute('aria-hidden', 'false');
+  }
+  function hideCookieConsent() {
+    cookieConsent.style.display = 'none';
+    cookieConsent.setAttribute('aria-hidden', 'true');
+  }
+  function checkCookieConsent() {
+    const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
+    if (consent === 'accepted') {
+      return true;
+    } else {
+      return false;
     }
+  }
+  acceptCookiesBtn.addEventListener('click', () => {
+    localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
+    hideCookieConsent();
+  });
 
-    function setCookie(n, v, d) {
-      const t = new Date();
-      t.setTime(t.getTime() + d * 24 * 60 * 60 * 1000);
-      document.cookie = `${n}=${encodeURIComponent(v)};expires=${t.toUTCString()};path=/`;
+  // === Settings Toggle ===
+  settingsToggleBtn.addEventListener('click', () => {
+    if (settingsSidebar.classList.contains('open')) {
+      settingsSidebar.classList.remove('open');
+      settingsToggleBtn.setAttribute('aria-pressed', 'false');
+    } else {
+      settingsSidebar.classList.add('open');
+      settingsToggleBtn.setAttribute('aria-pressed', 'true');
     }
+  });
 
-    function getCookie(n) {
-      return document.cookie.split('; ').reduce((a,c)=> {
-        const [k,v]=c.split('=');
-        a[k]=decodeURIComponent(v); return a;
-      }, {})[n];
+  // === Save History Toggle ===
+  saveHistoryToggle.addEventListener('change', () => {
+    saveHistory = saveHistoryToggle.checked;
+    saveSaveHistoryToggle();
+    if (!saveHistory) {
+      // Clear saved chats from localStorage when off
+      localStorage.removeItem(CHATS_KEY);
+      localStorage.removeItem(CURRENT_CHAT_ID_KEY);
     }
+  });
 
-    function loadSettings() {
-      if (getCookie("cookieConsent") !== "true") {
-        document.getElementById("cookieConsent").style.display = "flex";
-        return;
-      }
-
-      document.getElementById("cookieConsent").style.display = "none";
-
-      const theme = getCookie("theme") || "dark";
-      const save = getCookie("saveHistory") !== "false";
-
-      document.getElementById('theme').value = theme;
-      document.getElementById('saveHistory').checked = save;
-
-      applyTheme(theme);
-
-      const hist = JSON.parse(getCookie("chatHistory") || "[]");
-      hist.forEach(m => appendMsg(m.text, m.role));
-
-      updateHistoryList();
+  // === Clear Chats ===
+  clearChatsBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to clear all saved chats? This cannot be undone.')) {
+      chatsAll = [];
+      currentChatId = null;
+      localStorage.removeItem(CHATS_KEY);
+      localStorage.removeItem(CURRENT_CHAT_ID_KEY);
+      renderChatList();
+      renderChat();
     }
+  });
 
-    function saveSettings() {
-      const theme = document.getElementById('theme').value;
-      const save = document.getElementById('saveHistory').checked;
-
-      setCookie("theme", theme, 30);
-      setCookie("saveHistory", save, 30);
-      applyTheme(theme);
-    }
-
-    function applyTheme(theme) {
-      document.documentElement.className = theme === "light" ? "light" : "";
-    }
-
-    function clearChat() {
-      document.getElementById('chat').innerHTML = '';
-      setCookie("chatHistory", "[]", 30);
-      updateHistoryList();
-    }
-
-    function clearCookies() {
-      ["theme", "chatHistory", "saveHistory", "cookieConsent"].forEach(n => {
-        setCookie(n, "", -1);
+  // === Clear Cookies & Reset ===
+  clearCookiesBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to clear cookies and reset all settings? This will reload the page.')) {
+      localStorage.clear();
+      sessionStorage.clear();
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
       });
       location.reload();
     }
+  });
 
-    function acceptCookies() {
-      setCookie("cookieConsent", "true", 365);
-      loadSettings();
+  // === Send Inquiry ===
+  inquiryBtn.addEventListener('click', () => {
+    alert('To send an inquiry, please email support@freesearch.ai or visit our website.');
+  });
+
+  // === Chat Input Handling ===
+  function updateChatTitleFromMessages(chat) {
+    if (!chat) return;
+    const firstUserMsg = chat.messages.find(m => m.role === 'user');
+    if (!firstUserMsg) {
+      chat.title = 'New Chat';
+      return;
+    }
+    // Use first user message truncated as chat title
+    chat.title = firstUserMsg.text.length > 30 ? firstUserMsg.text.slice(0, 30) + '…' : firstUserMsg.text;
+  }
+
+  async function generateBotResponse(prompt) {
+    if (!generator) {
+      appendMsg('Error: AI model not loaded.', 'bot');
+      return '';
+    }
+    isGenerating = true;
+    sendBtn.disabled = true;
+    inputEl.disabled = true;
+
+    const maxLength = 100; // max tokens generated
+    const temperature = 0.7;
+
+    // Append a space to ensure completion continues fluently
+    let response = '';
+
+    // Display a typing indicator (e.g. "...")
+    appendMsg('', 'bot');
+    const botMsgDiv = chatEl.lastChild;
+
+    try {
+      // The GPT-2 generator in transformers.js currently does not support streaming output,
+      // so we generate the full output at once and then display.
+
+      // Use text generation pipeline
+      const output = await generator(prompt, {
+        max_new_tokens: maxLength,
+        temperature,
+        do_sample: true,
+        repetition_penalty: 1.2,
+      });
+
+      // output is a string continuation of prompt
+      // We remove the prompt prefix to get only the generated text
+      const generatedText = output.slice(prompt.length).trim();
+
+      botMsgDiv.textContent = generatedText;
+      response = generatedText;
+
+    } catch(e) {
+      botMsgDiv.textContent = 'Error generating response.';
+      console.error('Error in AI generation:', e);
+      response = '';
     }
 
-    function updateHistoryList() {
-      const list = document.getElementById("historyList");
-      const hist = JSON.parse(getCookie("chatHistory") || "[]");
-      list.innerHTML = hist.map((m, i) => `<div><b>${m.role}:</b> ${m.text.slice(0, 50)}...</div>`).join("");
+    isGenerating = false;
+    sendBtn.disabled = false;
+    inputEl.disabled = false;
+    inputEl.focus();
+    return response;
+  }
+
+  async function onUserSendMessage(text) {
+    if (!text.trim()) return;
+
+    const chat = getCurrentChat();
+    if (!chat) {
+      createNewChat();
+    }
+    const now = Date.now();
+    const messageUser = {role: 'user', text: text.trim(), timestamp: now};
+    const current = getCurrentChat();
+    current.messages.push(messageUser);
+
+    // Update chat title based on first user message
+    updateChatTitleFromMessages(current);
+
+    saveChats();
+    renderChatList();
+    renderChat();
+
+    // Prepare prompt: combine all previous messages in this chat for context
+    // Format: user: ... \nbot: ...
+    let prompt = '';
+    for (const msg of current.messages) {
+      prompt += (msg.role === 'user' ? 'User: ' : 'Bot: ') + msg.text + '\n';
+    }
+    prompt += 'Bot: ';
+
+    const botResponse = await generateBotResponse(prompt);
+    if (!botResponse) return;
+
+    const messageBot = {role: 'bot', text: botResponse, timestamp: Date.now()};
+    current.messages.push(messageBot);
+
+    saveChats();
+    renderChatList();
+    renderChat();
+  }
+
+  // === Form submit handler ===
+  document.getElementById('inputArea').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (isGenerating) return;
+    const text = inputEl.value;
+    inputEl.value = '';
+    await onUserSendMessage(text);
+  });
+
+  // === New Chat button ===
+  newChatBtn.addEventListener('click', () => {
+    createNewChat();
+  });
+
+  // === Initialization ===
+  async function init() {
+    // Cookie consent check
+    if (!checkCookieConsent()) {
+      showCookieConsent();
+    } else {
+      hideCookieConsent();
     }
 
-    window.onload = loadSettings;
-  </script>
+    // Load save history toggle
+    saveHistory = loadSaveHistoryToggle();
+    saveHistoryToggle.checked = saveHistory;
+
+    // Load chats
+    if (saveHistory) {
+      loadChats();
+      currentChatId = loadCurrentChatId();
+
+      if (!currentChatId && chatsAll.length > 0) {
+        currentChatId = chatsAll[0].id;
+      }
+    } else {
+      chatsAll = [];
+      currentChatId = null;
+    }
+
+    if (!currentChatId) {
+      createNewChat();
+    }
+
+    renderChatList();
+    renderChat();
+
+    // Load GPT-2 model via transformers.js
+    appendMsg('Loading AI model...', 'bot');
+    try {
+      generator = await window.transformers.pipeline('text-generation', 'Xenova/gpt2');
+      appendMsg('AI model loaded! Ask me anything.', 'bot');
+    } catch(e) {
+      appendMsg('Failed to load AI model. Please check your internet connection.', 'bot');
+      console.error('Error loading model:', e);
+    }
+  }
+
+  await init();
+
+  // Accessibility: focus chat when tabbing from input or history list
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'ArrowUp' && inputEl.value.length === 0) {
+      e.preventDefault();
+      chatEl.focus();
+    }
+  });
+
+  chatListEl.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      inputEl.focus();
+    }
+  });
+
+})();
+</script>
+
 </body>
 </html>
