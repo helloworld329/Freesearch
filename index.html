@@ -3,785 +3,420 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>FreeSearch Chatbot with History & Settings</title>
+<title>EduSearch Chatbot</title>
 <style>
-  /* === Reset & base === */
-  * {
-    box-sizing: border-box;
-  }
+  /* === Full UI Styling === */
+
   body {
     margin: 0; padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     background-color: #121212;
-    color: #eee;
+    color: #e0e0e0;
+    display: flex;
+    flex-direction: column;
     height: 100vh;
-    display: flex;
     overflow: hidden;
-    user-select: text;
   }
-  button, input {
-    font-family: inherit;
-  }
-  button {
-    cursor: pointer;
-  }
-  /* === Left Sidebar (Chat History) === */
-  #historySidebar {
-    width: 280px;
-    background-color: #1f1f1f;
-    border-right: 1px solid #333;
-    display: flex;
-    flex-direction: column;
-    padding: 15px 12px;
-  }
-  #historySidebar h2 {
-    margin: 0 0 15px 10px;
-    color: #64b5f6;
-    font-weight: 600;
+
+  header {
+    background-color: #222;
+    padding: 15px 20px;
+    font-size: 1.7em;
+    font-weight: bold;
+    text-align: center;
     user-select: none;
+    border-bottom: 2px solid #444;
   }
-  #chatList {
-    flex-grow: 1;
-    overflow-y: auto;
-    outline: none;
-  }
-  .chatItem {
-    background: #282828;
-    border-radius: 12px;
-    margin-bottom: 10px;
-    padding: 12px 15px;
+
+  #gear {
+    position: fixed;
+    top: 15px;
+    right: 20px;
+    font-size: 1.5em;
     cursor: pointer;
     user-select: none;
-    transition: background-color 0.3s ease;
-    display: flex;
-    flex-direction: column;
+    color: #bbb;
+    transition: color 0.3s;
+    z-index: 10;
   }
-  .chatItem:hover, .chatItem.selected {
-    background: #64b5f6;
-    color: #121212;
+  #gear:hover {
+    color: #fff;
   }
-  .chatItem .title {
-    font-weight: 600;
-    font-size: 0.95rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .chatItem .preview {
-    font-size: 0.85rem;
-    margin-top: 4px;
-    opacity: 0.7;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .chatItem .timestamp {
-    font-size: 0.75rem;
-    opacity: 0.5;
-    margin-top: 2px;
-    font-style: italic;
-  }
-  #newChatBtn {
-    margin-top: 10px;
-    padding: 12px;
-    background-color: #64b5f6;
-    border: none;
-    border-radius: 12px;
-    font-weight: 700;
-    color: #121212;
-    user-select: none;
-    transition: background-color 0.2s ease;
-  }
-  #newChatBtn:hover {
-    background-color: #4a8ad3;
-  }
-  /* === Main Chat Area === */
-  #mainArea {
-    flex-grow: 1;
-    background-color: #282828;
-    display: flex;
-    flex-direction: column;
-    padding: 20px 24px;
-    position: relative;
-  }
+
   #chat {
-    flex-grow: 1;
+    flex: 1;
+    padding: 15px 20px;
     overflow-y: auto;
-    padding-right: 10px;
-    outline: none;
-    font-size: 1rem;
-    line-height: 1.45;
+    background: #181818;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
+
   .msg {
     max-width: 75%;
-    padding: 12px 18px;
-    margin-bottom: 18px;
-    border-radius: 24px;
-    word-wrap: break-word;
+    padding: 12px 16px;
+    border-radius: 12px;
+    line-height: 1.4;
+    font-size: 1rem;
     white-space: pre-wrap;
+    word-break: break-word;
   }
-  .user {
+  .msg.user {
+    background: #2d6dfd;
+    color: white;
     align-self: flex-end;
-    background-color: #064789;
-    color: #b3d1ff;
-    text-align: right;
-    border-bottom-right-radius: 4px;
+    border-bottom-right-radius: 0;
   }
-  .bot {
+  .msg.bot {
+    background: #333;
+    color: #ddd;
     align-self: flex-start;
-    background-color: #37474f;
-    color: #cfd8dc;
-    text-align: left;
-    border-bottom-left-radius: 4px;
+    border-bottom-left-radius: 0;
   }
-  /* Input area */
+
   #inputArea {
     display: flex;
-    margin-top: auto;
+    padding: 12px 20px;
+    background: #222;
+    border-top: 2px solid #444;
   }
-  #input {
-    flex-grow: 1;
-    border-radius: 24px;
-    border: none;
-    padding: 14px 20px;
+  #inputArea input {
+    flex: 1;
+    padding: 10px 14px;
     font-size: 1.1rem;
-    background-color: #121212;
-    color: #eee;
-    transition: box-shadow 0.2s ease;
-  }
-  #input::placeholder {
-    color: #666;
-  }
-  #input:focus {
+    border: none;
+    border-radius: 8px;
     outline: none;
-    box-shadow: 0 0 8px #64b5f6;
+    background: #2a2a2a;
+    color: #eee;
+    transition: background 0.3s;
   }
-  #sendBtn {
+  #inputArea input::placeholder {
+    color: #888;
+  }
+  #inputArea input:focus {
+    background: #3a3a3a;
+  }
+  #inputArea button {
     margin-left: 12px;
-    background-color: #64b5f6;
-    border: none;
-    color: #121212;
-    font-weight: 700;
-    border-radius: 24px;
-    padding: 14px 26px;
+    padding: 10px 18px;
     font-size: 1.1rem;
-    user-select: none;
-    transition: background-color 0.2s ease;
+    border: none;
+    border-radius: 8px;
+    background: #2d6dfd;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s;
   }
-  #sendBtn:hover:not(:disabled) {
-    background-color: #4a8ad3;
+  #inputArea button:hover {
+    background: #1c53d8;
   }
-  #sendBtn:disabled {
-    background-color: #426e9a;
-    cursor: not-allowed;
-  }
-  /* === Right Sidebar (Settings Panel) === */
-  #settingsSidebar {
-    width: 320px;
-    background-color: #1f1f1f;
+
+  #settings {
     position: fixed;
-    top: 0;
-    right: -320px;
-    height: 100vh;
-    padding: 25px 20px;
-    box-shadow: -4px 0 10px rgba(0,0,0,0.6);
-    transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
-    display: flex;
-    flex-direction: column;
-    z-index: 100;
+    top: 50px;
+    right: -260px;
+    width: 250px;
+    background: #222;
+    border-left: 2px solid #444;
+    padding: 20px;
+    height: calc(100% - 50px);
+    box-sizing: border-box;
+    transition: right 0.35s;
+    color: #ddd;
+    font-size: 0.95rem;
+    overflow-y: auto;
     user-select: none;
+    z-index: 11;
   }
-  #settingsSidebar.open {
+  #settings.open {
     right: 0;
   }
-  #settingsSidebar h2 {
-    margin: 0 0 25px 0;
-    font-weight: 700;
-    color: #64b5f6;
-    user-select: none;
+  #settings h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-weight: 600;
   }
-  #settingsPanel label {
+  #settings label {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 22px;
-    font-size: 1rem;
-    cursor: pointer;
-    user-select: none;
+    margin-bottom: 16px;
   }
-  #settingsPanel input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-  }
-  #settingsPanel button {
-    margin-top: 10px;
-    padding: 14px;
-    background-color: #64b5f6;
+  #settings select {
+    padding: 6px 8px;
+    border-radius: 6px;
     border: none;
-    border-radius: 14px;
-    font-weight: 700;
-    color: #121212;
-    cursor: pointer;
-    user-select: none;
-    transition: background-color 0.2s ease;
-  }
-  #settingsPanel button:hover {
-    background-color: #4a8ad3;
-  }
-  /* === Settings toggle button top-right === */
-  #settingsToggleBtn {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background-color: #64b5f6;
-    border: none;
-    border-radius: 50%;
-    width: 52px;
-    height: 52px;
-    cursor: pointer;
-    box-shadow: 0 0 14px #64b5f6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 110;
-    user-select: none;
-    transition: background-color 0.2s ease;
-  }
-  #settingsToggleBtn:hover {
-    background-color: #4a8ad3;
-  }
-  #settingsToggleBtn svg {
-    fill: #121212;
-    width: 28px;
-    height: 28px;
-  }
-  /* === Cookie Consent Banner === */
-  #cookieConsent {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #222;
+    background: #2a2a2a;
     color: #eee;
-    padding: 16px 28px;
-    border-radius: 28px;
-    box-shadow: 0 0 24px #64b5f6;
     font-size: 1rem;
-    display: none;
-    align-items: center;
-    gap: 26px;
-    max-width: 480px;
-    user-select: none;
-    z-index: 9999;
   }
-  #cookieConsent p {
-    margin: 0;
-    flex-grow: 1;
-  }
-  #cookieConsent button {
-    padding: 10px 22px;
-    background-color: #64b5f6;
+  #settings button {
+    width: 100%;
+    padding: 10px 0;
     border: none;
-    border-radius: 22px;
-    font-weight: 700;
-    color: #121212;
-    user-select: none;
-    transition: background-color 0.2s ease;
-  }
-  #cookieConsent button:hover {
-    background-color: #4a8ad3;
-  }
-  /* Scrollbar styles for chatList and chat */
-  #chatList::-webkit-scrollbar, #chat::-webkit-scrollbar {
-    width: 8px;
-  }
-  #chatList::-webkit-scrollbar-thumb, #chat::-webkit-scrollbar-thumb {
-    background: #64b5f6;
+    background: #b03535;
+    color: white;
+    font-weight: bold;
     border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
   }
-  #chatList::-webkit-scrollbar-track, #chat::-webkit-scrollbar-track {
-    background: #1f1f1f;
+  #settings button:hover {
+    background: #7a2121;
+  }
+
+  /* Light theme overrides */
+  body.light {
+    background-color: #f9f9f9;
+    color: #111;
+  }
+  body.light header {
+    background-color: #ddd;
+    color: #111;
+    border-bottom: 2px solid #bbb;
+  }
+  body.light #chat {
+    background: #eee;
+    color: #111;
+  }
+  body.light .msg.bot {
+    background: #ddd;
+    color: #111;
+  }
+  body.light .msg.user {
+    background: #3a75f8;
+    color: white;
+  }
+  body.light #inputArea {
+    background: #eee;
+    border-top: 2px solid #bbb;
+  }
+  body.light #inputArea input {
+    background: #fff;
+    color: #111;
+  }
+  body.light #inputArea input::placeholder {
+    color: #555;
+  }
+  body.light #inputArea input:focus {
+    background: #f2f2f2;
+  }
+  body.light #inputArea button {
+    background: #3a75f8;
+  }
+  body.light #inputArea button:hover {
+    background: #2755d1;
+  }
+  body.light #settings {
+    background: #f0f0f0;
+    color: #111;
+    border-left: 2px solid #bbb;
+  }
+  body.light #settings button {
+    background: #aa3333;
+  }
+  body.light #settings button:hover {
+    background: #7a2121;
   }
 </style>
 </head>
 <body>
 
-<!-- Left Sidebar: Chat History -->
-<aside id="historySidebar" role="region" aria-label="Chat History">
-  <h2>Chats</h2>
-  <div id="chatList" tabindex="0" aria-live="polite" aria-atomic="false"></div>
-  <button id="newChatBtn" aria-label="Start New Chat">+ New Chat</button>
-</aside>
+<header>EduSearch Chatbot</header>
+<div id="gear" title="Settings ⚙️">⚙️</div>
 
-<!-- Main Chat Area -->
-<main id="mainArea" role="main" aria-label="Chat Window">
-  <section id="chat" tabindex="0" aria-live="polite" aria-atomic="false"></section>
-  <form id="inputArea" aria-label="Send a message">
-    <input id="input" type="text" placeholder="Ask me anything..." aria-label="Chat input" autocomplete="off" required />
-    <button id="sendBtn" type="submit" aria-label="Send message">Send</button>
-  </form>
-</main>
-
-<!-- Right Sidebar: Settings Panel -->
-<aside id="settingsSidebar" role="region" aria-label="Settings Panel">
-  <h2>Settings</h2>
-  <div id="settingsPanel">
-    <label for="saveHistoryToggle"><input type="checkbox" id="saveHistoryToggle" /> Save Chat History</label>
-    <button id="clearChatsBtn" aria-label="Clear All Chats">Clear All Chats</button>
-    <button id="clearCookiesBtn" aria-label="Clear Cookies and Reset">Clear Cookies & Reset</button>
-    <button id="inquiryBtn" aria-label="Send Inquiry">Send Inquiry</button>
-  </div>
-</aside>
-
-<!-- Settings toggle button top-right -->
-<button id="settingsToggleBtn" aria-label="Toggle Settings Panel" title="Settings" type="button">
-  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-    <path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0-14c-1.1 0-2 .9-2 2v.22a7.95 7.95 0 0 0-3.5 2.07l-.15-.15a2 2 0 0 0-2.83 2.83l.15.15A7.95 7.95 0 0 0 4.22 10H4a2 2 0 1 0 0 4h.22a7.95 7.95 0 0 0 2.07 3.5l-.15.15a2 2 0 0 0 2.83 2.83l.15-.15A7.95 7.95 0 0 0 10 19.78V20a2 2 0 1 0 4 0v-.22a7.95 7.95 0 0 0 3.5-2.07l.15.15a2 2 0 1 0 2.83-2.83l-.15-.15a7.95 7.95 0 0 0 2.07-3.5H20a2 2 0 1 0 0-4h-.22a7.95 7.95 0 0 0-2.07-3.5l.15-.15a2 2 0 0 0-2.83-2.83l-.15.15A7.95 7.95 0 0 0 14 4.22V4c0-1.1-.9-2-2-2z"/>
-  </svg>
-</button>
-
-<!-- Cookie Consent Banner -->
-<div id="cookieConsent" role="alertdialog" aria-modal="true" aria-live="assertive">
-  <p>This site uses cookies to save your chat history and settings. Do you accept cookies?</p>
-  <button id="acceptCookiesBtn" aria-label="Accept Cookies">Accept</button>
+<div id="chat" aria-live="polite" aria-label="Chat messages">
+  <div class="msg bot">Hi there! Ask me anything educational (math, facts, etc.).</div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@latest/dist/transformers.min.js"></script>
+<div id="inputArea">
+  <input id="input" type="text" aria-label="Your question" placeholder="Ask a question..." autocomplete="off" />
+  <button onclick="handleQuery()" aria-label="Send question">Ask</button>
+</div>
+
+<div id="settings" role="region" aria-label="Settings panel">
+  <h3>Settings</h3>
+  <label for="theme">
+    Theme:
+    <select id="theme" onchange="saveSettings()">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+    </select>
+  </label>
+  <button onclick="clearChat()">Clear Chat</button>
+</div>
+
+<!-- transformers.js latest CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.1.0/dist/transformers.min.js"></script>
+
 <script>
-(async () => {
-  'use strict';
+  // === GLOBAL VARIABLES ===
+  let pipeline = null;
 
-  // === Elements ===
-  const chatEl = document.getElementById('chat');
-  const inputEl = document.getElementById('input');
-  const sendBtn = document.getElementById('sendBtn');
-  const saveHistoryToggle = document.getElementById('saveHistoryToggle');
-  const clearChatsBtn = document.getElementById('clearChatsBtn');
-  const clearCookiesBtn = document.getElementById('clearCookiesBtn');
-  const inquiryBtn = document.getElementById('inquiryBtn');
-  const cookieConsent = document.getElementById('cookieConsent');
-  const acceptCookiesBtn = document.getElementById('acceptCookiesBtn');
-  const settingsSidebar = document.getElementById('settingsSidebar');
-  const settingsToggleBtn = document.getElementById('settingsToggleBtn');
-  const chatListEl = document.getElementById('chatList');
-  const newChatBtn = document.getElementById('newChatBtn');
+  // Load the AI model asynchronously
+  async function loadModel() {
+    appendMsg("Loading AI model, please wait...", "bot");
+    try {
+      pipeline = await window.transformers.pipeline('text-generation', 'Xenova/gpt2');
+      appendMsg("🤖 AI model loaded and ready.", "bot");
+    } catch (e) {
+      appendMsg("⚠️ Failed to load AI model.", "bot");
+      console.error("Model load error:", e);
+    }
+  }
 
-  // === Storage keys ===
-  const COOKIE_CONSENT_KEY = 'freesearch_cookie_consent';
-  const CHATS_KEY = 'freesearch_chats';
-  const CURRENT_CHAT_ID_KEY = 'freesearch_currentChatId';
-  const SAVE_HISTORY_KEY = 'freesearch_save_history';
-
-  // === State ===
-  let chatsAll = []; // Array of {id:string, title:string, messages: [{role: 'user'|'bot', text:string, timestamp:number}]}
-  let currentChatId = null;
-  let saveHistory = true;
-  let generator = null; // transformers.js generator model
-  let isGenerating = false;
-
-  // === Utilities ===
+  // Sanitize user input/output to avoid HTML injection
   function sanitize(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
   }
-  function formatTimestamp(ts) {
-    const d = new Date(ts);
-    return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
-  }
-  // Generate random chat id
-  function generateChatId() {
-    return 'chat-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
-  }
-  // Find current chat object
-  function getCurrentChat() {
-    return chatsAll.find(c => c.id === currentChatId) || null;
-  }
 
-  // === UI Rendering ===
-  // Append message bubble to chat view
-  function appendMsg(text, role) {
-    const div = document.createElement('div');
-    div.className = 'msg ' + role;
-    div.innerHTML = sanitize(text);
-    chatEl.appendChild(div);
-    chatEl.scrollTop = chatEl.scrollHeight;
+  // Append a message to chat
+  function appendMsg(text, cls) {
+    const chat = document.getElementById('chat');
+    const msg = document.createElement('div');
+    msg.className = `msg ${cls}`;
+    msg.innerHTML = sanitize(text);
+    chat.appendChild(msg);
+    chat.scrollTop = chat.scrollHeight;
+
+    // Save chat history in cookies (last 100 messages max)
+    let history = JSON.parse(getCookie("chatHistory") || "[]");
+    history.push({ role: cls, text });
+    if (history.length > 100) history.shift();
+    setCookie("chatHistory", JSON.stringify(history), 30);
   }
 
-  // Render full chat messages in the main area
-  function renderChat() {
-    chatEl.innerHTML = '';
-    const chat = getCurrentChat();
-    if (!chat) {
-      appendMsg("Hi there! Ask me anything educational or just chat.", 'bot');
-      return;
-    }
-    if (chat.messages.length === 0) {
-      appendMsg("Hi there! Ask me anything educational or just chat.", 'bot');
-      return;
-    }
-    for (const msg of chat.messages) {
-      appendMsg(msg.text, msg.role);
-    }
-  }
+  // Handle the user's query input
+  async function handleQuery() {
+    const input = document.getElementById('input');
+    const question = input.value.trim();
+    if (!question) return;
+    input.value = '';
 
-  // Render chat list sidebar
-  function renderChatList() {
-    chatListEl.innerHTML = '';
-    for (const chat of chatsAll) {
-      const lastMsg = chat.messages.length ? chat.messages[chat.messages.length - 1] : null;
-      const preview = lastMsg ? (lastMsg.text.length > 36 ? lastMsg.text.slice(0, 36) + '…' : lastMsg.text) : '(No messages)';
-      const item = document.createElement('div');
-      item.className = 'chatItem';
-      if (chat.id === currentChatId) item.classList.add('selected');
-      item.tabIndex = 0;
-      item.setAttribute('role', 'button');
-      item.setAttribute('aria-pressed', chat.id === currentChatId ? 'true' : 'false');
-      item.title = chat.title || '(Untitled chat)';
-      item.dataset.chatId = chat.id;
+    appendMsg(question, "user");
 
-      const titleDiv = document.createElement('div');
-      titleDiv.className = 'title';
-      titleDiv.textContent = chat.title || '(Untitled chat)';
-      item.appendChild(titleDiv);
+    // Quick math evaluation (simple expressions only)
+    let cleaned = question.toLowerCase()
+      .replace(/what('?s| is| the)?|calculate|result of|equals?|=/gi, '')
+      .replace(/x/gi, '*')
+      .trim();
 
-      const previewDiv = document.createElement('div');
-      previewDiv.className = 'preview';
-      previewDiv.textContent = preview;
-      item.appendChild(previewDiv);
-
-      if (chat.messages.length > 0) {
-        const tsDiv = document.createElement('div');
-        tsDiv.className = 'timestamp';
-        tsDiv.textContent = formatTimestamp(chat.messages[chat.messages.length - 1].timestamp);
-        item.appendChild(tsDiv);
+    if (/^[0-9+\-*/().\s]+$/.test(cleaned)) {
+      try {
+        const result = eval(cleaned);
+        appendMsg(`${question} = ${result}`, "bot");
+        return;
+      } catch {
+        appendMsg("I couldn't calculate that.", "bot");
+        return;
       }
-
-      // Click or enter/space keyboard select chat
-      item.addEventListener('click', () => {
-        if (currentChatId !== chat.id) {
-          currentChatId = chat.id;
-          saveCurrentChatId();
-          renderChat();
-          renderChatList();
-        }
-      });
-      item.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          item.click();
-        }
-      });
-
-      chatListEl.appendChild(item);
     }
-  }
 
-  // Save chats to localStorage
-  function saveChats() {
-    if (!saveHistory) return;
-    localStorage.setItem(CHATS_KEY, JSON.stringify(chatsAll));
-  }
-  // Load chats from localStorage
-  function loadChats() {
-    try {
-      const raw = localStorage.getItem(CHATS_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          chatsAll = parsed;
-        }
+    // Use AI model if available
+    if (pipeline) {
+      appendMsg("🤖 Thinking...", "bot");
+      try {
+        const output = await pipeline(question, { max_length: 120, do_sample: true, temperature: 0.7 });
+        // Remove the last "Thinking..." message before showing answer
+        const chat = document.getElementById('chat');
+        const botMsgs = chat.querySelectorAll('.msg.bot');
+        if (botMsgs.length) botMsgs[botMsgs.length - 1].remove();
+
+        const answer = output[0]?.generated_text || "I'm not sure how to answer that.";
+        appendMsg(answer, "bot");
+        return;
+      } catch (err) {
+        appendMsg("AI model error occurred.", "bot");
+        console.error("AI error:", err);
       }
-    } catch(e) {
-      chatsAll = [];
     }
-  }
-  // Save current chat id
-  function saveCurrentChatId() {
-    if (!saveHistory) return;
-    localStorage.setItem(CURRENT_CHAT_ID_KEY, currentChatId);
-  }
-  // Load current chat id
-  function loadCurrentChatId() {
-    if (!saveHistory) return null;
-    return localStorage.getItem(CURRENT_CHAT_ID_KEY);
-  }
-  // Save saveHistory toggle
-  function saveSaveHistoryToggle() {
-    localStorage.setItem(SAVE_HISTORY_KEY, saveHistory ? 'true' : 'false');
-  }
-  // Load saveHistory toggle
-  function loadSaveHistoryToggle() {
-    return localStorage.getItem(SAVE_HISTORY_KEY) === 'true';
-  }
 
-  // === New Chat Creation ===
-  function createNewChat() {
-    const id = generateChatId();
-    const newChat = {
-      id,
-      title: 'New Chat',
-      messages: []
-    };
-    chatsAll.unshift(newChat);
-    currentChatId = id;
-    saveCurrentChatId();
-    saveChats();
-    renderChatList();
-    renderChat();
-  }
-
-  // === Cookie Consent ===
-  function showCookieConsent() {
-    cookieConsent.style.display = 'flex';
-    cookieConsent.setAttribute('aria-hidden', 'false');
-  }
-  function hideCookieConsent() {
-    cookieConsent.style.display = 'none';
-    cookieConsent.setAttribute('aria-hidden', 'true');
-  }
-  function checkCookieConsent() {
-    const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
-    if (consent === 'accepted') {
-      return true;
-    } else {
-      return false;
-    }
-  }
-  acceptCookiesBtn.addEventListener('click', () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
-    hideCookieConsent();
-  });
-
-  // === Settings Toggle ===
-  settingsToggleBtn.addEventListener('click', () => {
-    if (settingsSidebar.classList.contains('open')) {
-      settingsSidebar.classList.remove('open');
-      settingsToggleBtn.setAttribute('aria-pressed', 'false');
-    } else {
-      settingsSidebar.classList.add('open');
-      settingsToggleBtn.setAttribute('aria-pressed', 'true');
-    }
-  });
-
-  // === Save History Toggle ===
-  saveHistoryToggle.addEventListener('change', () => {
-    saveHistory = saveHistoryToggle.checked;
-    saveSaveHistoryToggle();
-    if (!saveHistory) {
-      // Clear saved chats from localStorage when off
-      localStorage.removeItem(CHATS_KEY);
-      localStorage.removeItem(CURRENT_CHAT_ID_KEY);
-    }
-  });
-
-  // === Clear Chats ===
-  clearChatsBtn.addEventListener('click', () => {
-    if (confirm('Are you sure you want to clear all saved chats? This cannot be undone.')) {
-      chatsAll = [];
-      currentChatId = null;
-      localStorage.removeItem(CHATS_KEY);
-      localStorage.removeItem(CURRENT_CHAT_ID_KEY);
-      renderChatList();
-      renderChat();
-    }
-  });
-
-  // === Clear Cookies & Reset ===
-  clearCookiesBtn.addEventListener('click', () => {
-    if (confirm('Are you sure you want to clear cookies and reset all settings? This will reload the page.')) {
-      localStorage.clear();
-      sessionStorage.clear();
-      document.cookie.split(";").forEach(function(c) { 
-        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
-      });
-      location.reload();
-    }
-  });
-
-  // === Send Inquiry ===
-  inquiryBtn.addEventListener('click', () => {
-    alert('To send an inquiry, please email support@freesearch.ai or visit our website.');
-  });
-
-  // === Chat Input Handling ===
-  function updateChatTitleFromMessages(chat) {
-    if (!chat) return;
-    const firstUserMsg = chat.messages.find(m => m.role === 'user');
-    if (!firstUserMsg) {
-      chat.title = 'New Chat';
-      return;
-    }
-    // Use first user message truncated as chat title
-    chat.title = firstUserMsg.text.length > 30 ? firstUserMsg.text.slice(0, 30) + '…' : firstUserMsg.text;
-  }
-
-  async function generateBotResponse(prompt) {
-    if (!generator) {
-      appendMsg('Error: AI model not loaded.', 'bot');
-      return '';
-    }
-    isGenerating = true;
-    sendBtn.disabled = true;
-    inputEl.disabled = true;
-
-    const maxLength = 100; // max tokens generated
-    const temperature = 0.7;
-
-    // Append a space to ensure completion continues fluently
-    let response = '';
-
-    // Display a typing indicator (e.g. "...")
-    appendMsg('', 'bot');
-    const botMsgDiv = chatEl.lastChild;
-
+    // Fallback to DuckDuckGo Instant Answer API
     try {
-      // The GPT-2 generator in transformers.js currently does not support streaming output,
-      // so we generate the full output at once and then display.
+      const res = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(question)}&format=json&no_html=1&skip_disambig=1`);
+      const data = await res.json();
+      const answer = data.AbstractText || (data.RelatedTopics?.[0]?.Text ?? '');
+      appendMsg(answer || "I couldn't find anything.", "bot");
+    } catch {
+      appendMsg("Search failed.", "bot");
+    }
+  }
 
-      // Use text generation pipeline
-      const output = await generator(prompt, {
-        max_new_tokens: maxLength,
-        temperature,
-        do_sample: true,
-        repetition_penalty: 1.2,
+  // Cookies helper functions
+  function setCookie(name, value, days) {
+    const expires = new Date(Date.now() + days*864e5).toUTCString();
+    document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
+  }
+  function getCookie(name) {
+    return document.cookie.split('; ').reduce((r, v) => {
+      const parts = v.split('=');
+      return parts[0] === name ? decodeURIComponent(parts[1]) : r
+    }, '');
+  }
+
+  // Load theme and chat history on page load
+  function loadSettings() {
+    const theme = getCookie("theme") || "dark";
+    document.getElementById('theme').value = theme;
+    applyTheme(theme);
+
+    const history = JSON.parse(getCookie("chatHistory") || "[]");
+    if (history.length) {
+      const chat = document.getElementById('chat');
+      chat.innerHTML = ''; // Clear default message
+      history.forEach(m => {
+        appendMsg(m.text, m.role);
       });
-
-      // output is a string continuation of prompt
-      // We remove the prompt prefix to get only the generated text
-      const generatedText = output.slice(prompt.length).trim();
-
-      botMsgDiv.textContent = generatedText;
-      response = generatedText;
-
-    } catch(e) {
-      botMsgDiv.textContent = 'Error generating response.';
-      console.error('Error in AI generation:', e);
-      response = '';
     }
-
-    isGenerating = false;
-    sendBtn.disabled = false;
-    inputEl.disabled = false;
-    inputEl.focus();
-    return response;
   }
 
-  async function onUserSendMessage(text) {
-    if (!text.trim()) return;
-
-    const chat = getCurrentChat();
-    if (!chat) {
-      createNewChat();
-    }
-    const now = Date.now();
-    const messageUser = {role: 'user', text: text.trim(), timestamp: now};
-    const current = getCurrentChat();
-    current.messages.push(messageUser);
-
-    // Update chat title based on first user message
-    updateChatTitleFromMessages(current);
-
-    saveChats();
-    renderChatList();
-    renderChat();
-
-    // Prepare prompt: combine all previous messages in this chat for context
-    // Format: user: ... \nbot: ...
-    let prompt = '';
-    for (const msg of current.messages) {
-      prompt += (msg.role === 'user' ? 'User: ' : 'Bot: ') + msg.text + '\n';
-    }
-    prompt += 'Bot: ';
-
-    const botResponse = await generateBotResponse(prompt);
-    if (!botResponse) return;
-
-    const messageBot = {role: 'bot', text: botResponse, timestamp: Date.now()};
-    current.messages.push(messageBot);
-
-    saveChats();
-    renderChatList();
-    renderChat();
+  // Save theme on change
+  function saveSettings() {
+    const theme = document.getElementById('theme').value;
+    setCookie("theme", theme, 30);
+    applyTheme(theme);
   }
 
-  // === Form submit handler ===
-  document.getElementById('inputArea').addEventListener('submit', async e => {
-    e.preventDefault();
-    if (isGenerating) return;
-    const text = inputEl.value;
-    inputEl.value = '';
-    await onUserSendMessage(text);
-  });
-
-  // === New Chat button ===
-  newChatBtn.addEventListener('click', () => {
-    createNewChat();
-  });
-
-  // === Initialization ===
-  async function init() {
-    // Cookie consent check
-    if (!checkCookieConsent()) {
-      showCookieConsent();
+  // Apply theme styles to body class
+  function applyTheme(theme) {
+    if (theme === 'light') {
+      document.body.classList.add('light');
     } else {
-      hideCookieConsent();
-    }
-
-    // Load save history toggle
-    saveHistory = loadSaveHistoryToggle();
-    saveHistoryToggle.checked = saveHistory;
-
-    // Load chats
-    if (saveHistory) {
-      loadChats();
-      currentChatId = loadCurrentChatId();
-
-      if (!currentChatId && chatsAll.length > 0) {
-        currentChatId = chatsAll[0].id;
-      }
-    } else {
-      chatsAll = [];
-      currentChatId = null;
-    }
-
-    if (!currentChatId) {
-      createNewChat();
-    }
-
-    renderChatList();
-    renderChat();
-
-    // Load GPT-2 model via transformers.js
-    appendMsg('Loading AI model...', 'bot');
-    try {
-      generator = await window.transformers.pipeline('text-generation', 'Xenova/gpt2');
-      appendMsg('AI model loaded! Ask me anything.', 'bot');
-    } catch(e) {
-      appendMsg('Failed to load AI model. Please check your internet connection.', 'bot');
-      console.error('Error loading model:', e);
+      document.body.classList.remove('light');
     }
   }
 
-  await init();
+  // Clear chat and cookie history
+  function clearChat() {
+    if (confirm("Clear the chat history?")) {
+      document.getElementById('chat').innerHTML = '';
+      setCookie("chatHistory", "[]", 30);
+    }
+  }
 
-  // Accessibility: focus chat when tabbing from input or history list
-  inputEl.addEventListener('keydown', e => {
-    if (e.key === 'ArrowUp' && inputEl.value.length === 0) {
+  // Toggle settings panel visibility
+  function toggleSettings() {
+    document.getElementById('settings').classList.toggle('open');
+  }
+
+  // Event listeners
+  document.getElementById('gear').addEventListener('click', toggleSettings);
+  document.getElementById('input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      chatEl.focus();
+      handleQuery();
     }
   });
 
-  chatListEl.addEventListener('keydown', e => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      inputEl.focus();
-    }
-  });
-
-})();
+  // Initialization
+  window.onload = () => {
+    loadSettings();
+    loadModel();
+  };
 </script>
 
 </body>
